@@ -9,10 +9,10 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
-# Reference: https://ieeexplore.ieee.org/document/8576289
+# Reference to the inital research paper: https://ieeexplore.ieee.org/document/8576289
 
 # Method to generate 512 bit elGamal public and private keys
-# eference: https://github.com/pycrypto/pycrypto/blob/master/lib/Crypto/PublicKey/ElGamal.py
+# reference: https://github.com/pycrypto/pycrypto/blob/master/lib/Crypto/PublicKey/ElGamal.py
 def generateElgamalKey(bits=512):
   
     # Getting a large prime number
@@ -60,6 +60,7 @@ def encryptFile(filepath, aes_key):
         with open(filepath + ".enc", 'wb') as f:
             f.write(encrypted_data)
         print(f"File '{filepath}' encrypted successfully!")
+       # saving the file with .enc extension
     except Exception as e:
         print(f"Error encrypting file {filepath}: {e}")
 
@@ -70,7 +71,7 @@ def decryptFile(filepath, aes_key):
     try:
         with open(filepath, 'rb') as f:
             encrypted_data = f.read()
-        # Extracting the IV    
+        # Extracting the vector    
         iv = encrypted_data[:16]  
          # Extracting the ciphertext
         ciphertext = encrypted_data[16:] 
@@ -89,10 +90,23 @@ def encryptFolder(folder_path, aes_key):
         for root, _, files in os.walk(folder_path):
             for file in files:
                 file_path = os.path.join(root, file)
+               # opens athe folder and encrypts all the files using the AES key
                 encryptFile(file_path, aes_key)
     except Exception as e:
         print(f"Error encrypting folder {folder_path}: {e}")
 
+# Decrypting all files in a folder.
+def decryptFolder(folder_path, aes_key):
+
+    try:
+        for root, _, files in os.walk(folder_path):
+            for file in files:
+                # only decrypt files in the folder ending in enc format
+                if file.endswith(".enc"):
+                    file_path = os.path.join(root, file)
+                    decryptFile(file_path, aes_key)
+    except Exception as e:
+        print(f"Error decrypting folder {folder_path}: {e}")
 
 # Save ElGamal keys to files
 def saveElgamalKeys(public_key, private_key, public_key_file, private_key_file):
@@ -120,7 +134,7 @@ def saveElgamalKeys(public_key, private_key, public_key_file, private_key_file):
 def loadElgamalKeys(public_key_file, private_key_file):
     
     try:
-        # Construct the full file paths for public and private keys
+        # Constructing file paths for public and private keys
         public_key_path = os.path.join('keys', public_key_file)
         private_key_path = os.path.join('keys', private_key_file)
         
@@ -136,37 +150,7 @@ def loadElgamalKeys(public_key_file, private_key_file):
         print(f"Error loading keys: {e}")
         return None, None
 
-# Sign the ecrypted file using the  RSA private key
-def sign_file(file_path, private_key):
-    """Sign a file using RSA private key."""
-    try:
-        with open(file_path, 'rb') as f:
-            data = f.read()
-        hash_obj = SHA256.new(data)
-        signature = pkcs1_15.new(private_key).sign(hash_obj)
-        with open(file_path + ".sig", 'wb') as f:
-            f.write(signature)
-        print(f"File '{file_path}' signed successfully!")
-    except Exception as e:
-        print(f"Error signing file {file_path}: {e}")
-
-# Function to verify a file signature using RSA public key
-def verify_file_signature(file_path, public_key):
-    """Verify the file signature using RSA public key."""
-    try:
-        with open(file_path, 'rb') as f:
-            data = f.read()
-        signature_path = file_path + ".sig"
-        with open(signature_path, 'rb') as f:
-            signature = f.read()
-        
-        hash_obj = SHA256.new(data)
-        pkcs1_15.new(public_key).verify(hash_obj, signature)
-        print(f"Signature for '{file_path}' is valid!")
-    except (ValueError, TypeError):
-        print(f"Invalid signature for '{file_path}'")
-    except Exception as e:
-        print(f"Error verifying signature for {file_path}: {e}")        
+ 
 
 # Main Function
 if __name__ == "__main__":
